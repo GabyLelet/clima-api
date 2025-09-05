@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Clima das Cidades</title>
   <style>
     body { font-family: Arial, sans-serif; background: #f0f8ff; padding: 20px; }
@@ -15,32 +15,59 @@
   <div id="climas"></div>
 
   <script>
-    async function carregarClima() {
+    // Cidades para consulta
+    const cidades = [
+      { nome: 'São Paulo', codigo: 'Sao Paulo,BR' },
+      { nome: 'Damasco', codigo: 'Damascus,SY' },
+      { nome: 'Bangladesh', codigo: 'Dhaka,BD' }
+    ];
+
+    // Sua chave da API OpenWeatherMap (substitua pela sua chave real)
+    const API_KEY = 'd2dee8e6b8cf4fd77ac0b4d6de844fe9';
+
+    // Função para buscar clima de uma cidade
+    async function buscarClima(cidade) {
       try {
-        const resposta = await fetch('http://localhost:3000/clima');
-        const dados = await resposta.json();
-        const container = document.getElementById('climas');
-        container.innerHTML = '';
-        
-        dados.forEach(cidade => {
-          const div = document.createElement('div');
-          div.className = 'cidade';
-          if (cidade.erro) {
-            div.innerHTML = `<h2>${cidade.cidade}</h2><p>${cidade.erro}</p>`;
-          } else {
-            div.innerHTML = `
-              <h2>${cidade.cidade}</h2>
-              <p>Temperatura: ${cidade.temperatura} °C</p>
-              <p>Vento: ${cidade.vento} m/s</p>
-              <p>Máxima: ${cidade.maxima} °C</p>
-              <p>Mínima: ${cidade.minima} °C</p>
-            `;
-          }
-          container.appendChild(div);
-        });
+        const url = `https://api.openweathermap.org/data/2.5/weather?q=${cidade.codigo}&units=metric&appid=${API_KEY}`;
+        const resposta = await fetch(url);
+        if (!resposta.ok) throw new Error('Erro na resposta da API');
+        const data = await resposta.json();
+        return {
+          cidade: cidade.nome,
+          temperatura: data.main.temp,
+          vento: data.wind.speed,
+          maxima: data.main.temp_max,
+          minima: data.main.temp_min
+        };
       } catch (erro) {
-        alert('Erro ao carregar dados do clima!');
+        return { cidade: cidade.nome, erro: 'Não foi possível obter os dados' };
       }
+    }
+
+    // Função para carregar e mostrar os dados do clima
+    async function carregarClima() {
+      const container = document.getElementById('climas');
+      container.innerHTML = 'Carregando dados...';
+
+      const resultados = await Promise.all(cidades.map(buscarClima));
+      container.innerHTML = '';
+
+      resultados.forEach(cidade => {
+        const div = document.createElement('div');
+        div.className = 'cidade';
+        if (cidade.erro) {
+          div.innerHTML = `<h2>${cidade.cidade}</h2><p>${cidade.erro}</p>`;
+        } else {
+          div.innerHTML = `
+            <h2>${cidade.cidade}</h2>
+            <p>Temperatura: ${cidade.temperatura} °C</p>
+            <p>Vento: ${cidade.vento} m/s</p>
+            <p>Máxima: ${cidade.maxima} °C</p>
+            <p>Mínima: ${cidade.minima} °C</p>
+          `;
+        }
+        container.appendChild(div);
+      });
     }
 
     carregarClima();
